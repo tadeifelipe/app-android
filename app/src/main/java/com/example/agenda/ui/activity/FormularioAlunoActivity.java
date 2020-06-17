@@ -1,5 +1,6 @@
 package com.example.agenda.ui.activity;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -11,22 +12,42 @@ import com.example.agenda.R;
 import com.example.agenda.dao.AlunoDAO;
 import com.example.agenda.model.Aluno;
 
+import static com.example.agenda.ui.activity.ContantesActivities.CHAVE_ALUNO;
+
 public class FormularioAlunoActivity extends AppCompatActivity {
 
-    public static final String TITULO_APP_BAR = "Novo aluno";
+    private static final String TITULO_APP_EDITA_BAR = "Edita aluno";
+    private static final String TITULO_APP_NOVO_BAR = "Novo Aluno" ;
     private TextView campoNome;
     private TextView campoTelefone;
     private TextView campoEmail;
     private final AlunoDAO dao = new AlunoDAO();
-
+    private Aluno aluno;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_formulario_aluno);
-
-        setTitle(TITULO_APP_BAR);
         iniciarCampos();
         configurarBotao();
+        carregaAluno();
+    }
+
+    private void carregaAluno() {
+        Intent dados = getIntent();
+        if (dados.hasExtra(CHAVE_ALUNO)){
+            setTitle(TITULO_APP_EDITA_BAR);
+            aluno = (Aluno)dados.getSerializableExtra(CHAVE_ALUNO);
+            preencheCampos();
+        } else {
+            setTitle(TITULO_APP_NOVO_BAR);
+            aluno = new Aluno();
+        }
+    }
+
+    private void preencheCampos() {
+        campoNome.setText(aluno.getNome());
+        campoTelefone.setText(aluno.getTelefone());
+        campoEmail.setText(aluno.getEmail());
     }
 
     private void configurarBotao() {
@@ -34,10 +55,19 @@ public class FormularioAlunoActivity extends AppCompatActivity {
         botao.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Aluno alunoCriado = criarAluno();
-                salvarAluno(alunoCriado);
+                finalizaFormulario();
             }
         });
+    }
+
+    private void finalizaFormulario() {
+        preencheAluno();
+        if (aluno.temIdValido()){
+            dao.edita(aluno);
+        } else {
+            dao.salva(aluno);
+        }
+        finish();
     }
 
     private void iniciarCampos() {
@@ -51,11 +81,9 @@ public class FormularioAlunoActivity extends AppCompatActivity {
         finish();
     }
 
-    private Aluno criarAluno() {
-        String nome = campoNome.getText().toString();
-        String telefone = campoTelefone.getText().toString();
-        String email = campoEmail.getText().toString();
-
-        return new Aluno(nome, telefone, email);
+    private void preencheAluno() {
+       aluno.setNome(campoNome.getText().toString());
+       aluno.setTelefone(campoTelefone.getText().toString());
+       aluno.setEmail(campoEmail.getText().toString());
     }
 }
