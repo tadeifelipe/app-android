@@ -2,11 +2,15 @@ package com.example.agenda.ui.activity;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.ContextMenu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -24,15 +28,36 @@ public class ListaAlunosActivity extends AppCompatActivity {
 
     public static final String TITULO_APP_BAR = "Lista de Alunos";
     private final AlunoDAO dao = new AlunoDAO();
+    private ArrayAdapter<Aluno> adapter;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_lista_alunos);
         setTitle(TITULO_APP_BAR);
-
         configurarFabNovoAluno();
-        dao.salva(new Aluno("Felipe","1112222333","felipe@gmail.com"));
+        configurarLista();
+        dao.salva(new Aluno("Felipe", "1112222333", "felipe@gmail.com"));
+        dao.salva(new Aluno("Luísa", "1112222333", "luisa@gmail.com"));
+    }
+
+    @Override
+    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
+        super.onCreateContextMenu(menu, v, menuInfo);
+        getMenuInflater()
+                .inflate(R.menu.activity_lista_alunos_menu, menu);
+    }
+
+    @Override
+    public boolean onContextItemSelected(@NonNull MenuItem item) {
+
+        int itemId = item.getItemId();
+        if (itemId == R.id.activity_lista_alunos_menu_remover) {
+            AdapterView.AdapterContextMenuInfo menuInfo = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
+            Aluno alunoEscolhido = adapter.getItem(menuInfo.position);
+            removeAluno(alunoEscolhido);
+        }
+        return super.onContextItemSelected(item);
     }
 
     private void configurarFabNovoAluno() {
@@ -53,15 +78,24 @@ public class ListaAlunosActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        configurarLista();
+        atualizaAlunos();
+    }
+
+    private void atualizaAlunos() {
+        adapter.clear();
+        adapter.addAll(dao.todos());
     }
 
     private void configurarLista() {
         ListView lista = findViewById(R.id.activity_lista_de_alunos_listview);
-        final List<Aluno> alunos = dao.todos();
-        configuraAdapter(lista, alunos);
-
+        configuraAdapter(lista);
         configuraListenerdeCliquePorItem(lista);
+        registerForContextMenu(lista);
+    }
+
+    private void removeAluno(Aluno alunoEscolhido) {
+        dao.remove(alunoEscolhido);
+        adapter.remove(alunoEscolhido);
     }
 
     private void configuraListenerdeCliquePorItem(ListView lista) {
@@ -80,9 +114,9 @@ public class ListaAlunosActivity extends AppCompatActivity {
         startActivity(vaiParaFormularioActivity);
     }
 
-    private void configuraAdapter(ListView lista, List<Aluno> alunos) {
-        lista.setAdapter(new ArrayAdapter<>(this,
-                android.R.layout.simple_list_item_1,
-                alunos));
+    private void configuraAdapter(ListView lista) {
+        adapter = new ArrayAdapter<>(this,
+                android.R.layout.simple_list_item_1);
+        lista.setAdapter(adapter);
     }
 }
